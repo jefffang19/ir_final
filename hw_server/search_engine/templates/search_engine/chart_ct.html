@@ -1,0 +1,647 @@
+{% load static %}
+{% load search_extra %}
+{% load crispy_forms_tags %}
+
+<html lang="en">
+<head>
+
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+	
+	<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+	<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<!------ Include the above in your HEAD tag ---------->
+
+	<title>Scatter Chart</title>
+	<script src={% static "js/chart.js" %}></script>
+	<script src={% static "js/chart_utils.js" %}></script>
+
+	<link rel="stylesheet" href="{% static 'css/page_theme.css' %}">
+	<style src={% static "css/page_theme.css" %}></style>
+
+	<style>
+		canvas {
+			-moz-user-select: none;
+			-webkit-user-select: none;
+			-ms-user-select: none;
+		}
+	</style>
+
+
+</head>
+<body>
+	{% comment %} background below {% endcomment %}
+	<nav class="navbar navbar-expand navbar-dark bg-primary"> <a href="#menu-toggle" id="menu-toggle" class="navbar-brand"><span class="navbar-toggler-icon"></span></a> <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExample02" aria-controls="navbarsExample02" aria-expanded="false" aria-label="Toggle navigation"> <span class="navbar-toggler-icon"></span> </button>
+		<div class="collapse navbar-collapse" id="navbarsExample02">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item active"> <a class="nav-link" href="">Home <span class="sr-only">(current)</span></a> </li>
+			</ul>
+			<form class="form-inline my-2 my-md-0"> </form>
+		</div>
+	</nav>
+	<div id="wrapper" class="toggled">
+		<!-- Sidebar -->
+		<div id="sidebar-wrapper">
+			<ul class="sidebar-nav">
+				<li> <a>_</a> </li>
+				<li> <button type="button" id="word0" class="btn btn-outline-secondary">Mask</button> </li>
+				<li> <button type="button" id="word1" class="btn btn-outline-secondary">Children</button> </li>
+				<li> <button type="button" id="word2" class="btn btn-outline-secondary">2003</button> </li>
+				<li> <button type="button" id="word3" class="btn btn-outline-secondary">2019</button> </li>
+				<li> <button type="button" id="word4" class="btn btn-outline-secondary">pneumothorax</button> </li>
+				<li> <button type="button" id="word5" class="btn btn-outline-secondary">pneumonia</button> </li>
+				<li> <button type="button" id="word6" class="btn btn-outline-secondary">image</button> </li>
+                <li> <button type="button" id="word7" class="btn btn-outline-secondary">adult</button> </li>
+                <li> <button type="button" id="word8" class="btn btn-outline-secondary">bat</button> </li>
+                <li> <button type="button" id="word9" class="btn btn-outline-secondary">immune</button> </li>
+                <li> <button type="button" id="word10" class="btn btn-outline-secondary">wuhan</button> </li>
+                <li> <button type="button" id="word11" class="btn btn-outline-secondary">vaccine</button> </li>
+			</ul>
+		</div> <!-- /#sidebar-wrapper -->
+		{% comment %} radio buttons {% endcomment %}
+{#		<br>#}
+{#		<div class="btn-group btn-group-toggle" data-toggle="buttons">#}
+{#			<div class="radio buttons">#}
+{#				<label class="btn btn-secondary">#}
+{#					<input type="radio" name="options" id="option2" autocomplete="off" checked onclick="openClass('container_table')"> Frequency Table#}
+{#				</label>#}
+{#				<label class="btn btn-secondary active">#}
+{#					<input type="radio" name="options" id="option1" autocomplete="off" checked onclick="openClass('canvas')"> Zipf Chart#}
+{#				</label>#}
+{#				<label class="btn btn-secondary active">#}
+{#					<input type="radio" name="options" id="option1" autocomplete="off" checked onclick="openClass('both')"> Both#}
+{#				</label>#}
+{#			</div>#}
+{#		</div>#}
+		{% comment %} radio buttons end {% endcomment %}
+		<!-- Page Content -->
+		{% comment %} Make sure to keep all page content within the #page-content-wrapper {% endcomment %}
+		<div id="page-content-wrapper">
+			<div class="container-fluid">
+				<h1 class="container" id="chart_title">Covid-19 {{ title }} Zipf Chart</h1>
+				{% comment %} chart below {% endcomment %}
+				<div style="width:100%">
+					<canvas id="canvas" class="container canvas"></canvas>
+				</div>
+				{% comment %} <button id="randomizeData">Randomize Data</button> {% endcomment %}
+				<script>
+{#                    ['mask', 'children', '2003', '2019', 'pneumothorax', 'pneumonia', 'image']#}
+					var color = Chart.helpers.color;
+					var freq_mask = {{ mask_freq|escapejs}};
+					var freq_children = {{ children_freq|escapejs}};
+					var freq_2003 = {{ 2003_freq|escapejs}};
+					var freq_2019 = {{ 2019_freq|escapejs}};
+					var freq_pneumothorax = {{ pneumothorax_freq|escapejs}};
+					var freq_pneumonia = {{ pneumonia_freq|escapejs}};
+					var freq_image = {{ image_freq|escapejs}};
+					var freq_adult = {{ adult_freq|escapejs }};
+					var freq_bat = {{ bat_freq|escapejs }};
+					var freq_immune = {{ immune_freq|escapejs }};
+					var freq_wuhan= {{ wuhan_freq|escapejs }};
+					var freq_vaccin= {{ vaccin_freq|escapejs }};
+					var rank_mask = {{ mask_rank|escapejs }};
+					var rank_children = {{ children_rank|escapejs}};
+					var rank_2003 = {{ 2003_rank|escapejs}};
+					var rank_2019 = {{ 2019_rank|escapejs}};
+					var rank_pneumothorax = {{ pneumothorax_rank|escapejs}};
+					var rank_pneumonia = {{ pneumonia_rank|escapejs}};
+					var rank_image = {{ image_rank|escapejs}};
+					var rank_adult = {{ adult_rank|escapejs }};
+					var rank_bat = {{ bat_rank|escapejs }};
+					var rank_immune = {{ immune_rank|escapejs }};
+					var rank_wuhan = {{ wuhan_rank|escapejs }};
+					var rank_vaccin = {{ vaccin_rank|escapejs }};
+
+
+					function generateData(list, r, thresh) {
+						var data = [];
+						
+						for (var i = 0; i < 10000; i++){
+						    if (Math.abs(i-r) > thresh){
+						        data.push({
+                                    x: i,
+                                    y: list[i]
+                                });
+                            }
+						}
+						return data;
+					}
+
+					function generatePoint(list, r) {
+						var data = [];
+
+                        data.push({
+                            x: r,
+                            y: list[r]
+                        });
+						return data;
+					}
+
+					function getRandomColor() {
+						var letters = '0123456789ABCDEF'.split('');
+						var color = '#';
+						for (var i = 0; i < 6; i++ ) {
+							color += letters[Math.floor(Math.random() * 16)];
+						}
+						return color;
+					}
+					
+					function getDataSet(par) {
+						var dataset = [];
+
+						switch (par){
+						    case 0:
+                                dataset.push({label: "mask",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_mask, rank_mask, 50) });
+
+                                dataset.push({label: "mask_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_mask, rank_mask) });
+                                break;
+                            case 1:
+                                dataset.push({label: "children",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_children, rank_children, 20) });
+                                dataset.push({label: "children_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_children, rank_children) })
+                                break;
+
+                            case 2:
+                                dataset.push({label: "2003",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_2003, rank_2003, 50) })
+                                dataset.push({label: "2003_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_2003, rank_2003) })
+                                break;
+
+                            case 3:
+                                dataset.push({label: "2019",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_2019, rank_2019, 50) })
+                                dataset.push({label: "2019_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_2019, rank_2019) })
+                                break;
+
+                            case 4:
+                                dataset.push({label: "pneumothorax",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_pneumothorax, rank_pneumothorax, 1) })
+                                dataset.push({label: "pneumothorax_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_pneumothorax, rank_pneumothorax) })
+                                break;
+
+                            case 5:
+                                dataset.push({label: "pneumonia",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_pneumonia, rank_pneumonia, 7) })
+                                dataset.push({label: "pneumonia_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_pneumonia, rank_pneumonia) })
+                                break;
+
+                            case 6:
+                                dataset.push({label: "image",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_image, rank_image, 1) })
+                                dataset.push({label: "image_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_image, rank_image) })
+                                break;
+
+                            case 7:
+                                dataset.push({label: "adult",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_adult, rank_adult, 50) })
+                                dataset.push({label: "adult_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_adult, rank_adult) })
+                                break;
+
+                            case 8:
+                                dataset.push({label: "bat",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_bat, rank_bat, 50) })
+                                dataset.push({label: "bat_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_bat, rank_bat) })
+                                break;
+
+                            case 9:
+                                dataset.push({label: "immune",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_immune, rank_immune, 50) })
+                                dataset.push({label: "immune_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_immune, rank_immune) })
+                                break;
+
+                            case 10:
+                                dataset.push({label: "wuhan",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_wuhan, rank_wuhan, 30) })
+                                dataset.push({label: "wuhan_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_wuhan, rank_wuhan) })
+                                break;
+
+                            case 11:
+                                dataset.push({label: "vaccin",
+                                    backgroundColor: window.chartColors.grey,
+                                    data: generateData(freq_vaccin, rank_vaccin, 50) })
+                                dataset.push({label: "vaccin_ct",
+                                    backgroundColor: window.chartColors.red,
+                                    data: generatePoint(freq_vaccin, rank_vaccin) })
+                                break;
+                        }
+
+						return dataset;
+					}
+
+                    function createChartData(par){
+					    var scatterChartData = {
+                            datasets : getDataSet(par),
+                        };
+
+					    return scatterChartData;
+                    }
+
+
+					window.onload = function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+
+                        window.myScatter = Chart.Scatter(ctx, {
+                            data: createChartData(0),
+                            options: {
+                                title: {
+                                    display: true,
+                                    text: 'Scatter Chart'
+                                },
+                            }
+                        });
+					};
+
+					document.getElementById('word0').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(0),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word1').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(1),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word2').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(2),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word3').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(3),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word4').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(4),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word5').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(5),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word6').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(6),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word7').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(7),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word8').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(8),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word9').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(9),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word10').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(10),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('word11').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: createChartData(11),
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					{% comment %} this function listens radio buttons to switch tab {% endcomment %}
+					{#function openClass(className) {#}
+					{#	var i, x;#}
+					{#	// get class="container" in page#}
+					{#	x = document.getElementsByClassName("container");#}
+					{#	//for all x class="container"  => display:none (hide show)#}
+					{#	for (i = 0; i < x.length; i++) {#}
+					{#		x[i].style.display = "none";#}
+					{#	}#}
+					{#	if (className.localeCompare('both') == 0) {#}
+					{#		document.getElementById("canvas").style.display = "block";#}
+					{#		document.getElementById("container_table").style.display = "table";#}
+					{#		document.getElementById("chart_title").style.display = "block";#}
+					{#	} #}
+					{#	//show only clicked content#}
+					{#	else if (className.localeCompare('container_table') == 0) {#}
+					{#		document.getElementById(className).style.display = "table";#}
+					{#	} else {#}
+  					{#		document.getElementById(className).style.display = "block";#}
+					{#		document.getElementById("chart_title").style.display = "block";#}
+					{#	}#}
+
+
+					{% comment %} document.getElementById('option1').addEventListener('click', function() {
+						scatterChartData.datasets.forEach(function(dataset) {
+							dataset.data = dataset.data.map(function() {
+								return {
+									x: randomScalingFactor(),
+									y: randomScalingFactor()
+								};
+							});
+						});
+						window.myScatter.update();
+					}); {% endcomment %}
+				</script>
+				{% comment %} chart above {% endcomment %}
+				<br>
+
+				{% comment %} table below {% endcomment %}
+                <h2>Ranking of CT in the following subsets</h2>
+				<table class="table table-striped container" id="container_table">
+					<thead class="thead-dark">
+						<tr>
+						<th scope="col">Rank %</th>
+						<th scope="col">Rank #</th>
+                        <th scope="col">Subset size</th>
+						<th scope="col">Subset</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+						<th scope="row">{{ mask_rank|cal_percentage:mask_subset_article_num }}</th>
+							<td>{{ mask_rank }}</td>
+                            <td>{{ mask_subset_article_num  }}</td>
+							<td>mask</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ children_rank|cal_percentage:children_subset_article_num }}</th>
+							<td>{{ children_rank }}</td>
+                            <td>{{ children_subset_article_num  }}</td>
+							<td>children</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ 2003_rank|cal_percentage:2003_subset_article_num }}</th>
+							<td>{{ 2003_rank }}</td>
+                            <td>{{ 2003_subset_article_num  }}</td>
+							<td>2003</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ 2019_rank|cal_percentage:2019_subset_article_num }}</th>
+							<td>{{ 2019_rank }}</td>
+                            <td>{{ 2019_subset_article_num  }}</td>
+							<td>2019</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ pneumothorax_rank|cal_percentage:pneumothorax_subset_article_num }}</th>
+							<td>{{ pneumothorax_rank }}</td>
+                            <td>{{ pneumothorax_subset_article_num  }}</td>
+							<td>pneumothorax</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ pneumonia_rank|cal_percentage:pneumonia_subset_article_num }}</th>
+							<td>{{ pneumonia_rank }}</td>
+                            <td>{{ pneumonia_subset_article_num  }}</td>
+							<td>pneumonia</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ image_rank|cal_percentage:image_subset_article_num }}</th>
+							<td>{{ image_rank }}</td>
+                            <td>{{ image_subset_article_num  }}</td>
+							<td>image</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ adult_rank|cal_percentage:adult_subset_article_num }}</th>
+							<td>{{ adult_rank }}</td>
+                            <td>{{ adult_subset_article_num  }}</td>
+							<td>adult</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ bat_rank|cal_percentage:bat_subset_article_num }}</th>
+							<td>{{ bat_rank }}</td>
+                            <td>{{ bat_subset_article_num  }}</td>
+							<td>bat</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ immune_rank|cal_percentage:immune_subset_article_num }}</th>
+							<td>{{ immune_rank }}</td>
+                            <td>{{ immune_subset_article_num  }}</td>
+							<td>immune</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ wuhan_rank|cal_percentage:wuhan_subset_article_num }}</th>
+							<td>{{ wuhan_rank }}</td>
+                            <td>{{ wuhan_subset_article_num  }}</td>
+							<td>wuhan</td>
+						</tr>
+                        <tr>
+						<th scope="row">{{ vaccin_rank|cal_percentage:vaccin_subset_article_num }}</th>
+							<td>{{ vaccin_rank }}</td>
+                            <td>{{ vaccin_subset_article_num  }}</td>
+							<td>vaccine</td>
+						</tr>
+					</tbody>
+				</table>
+				{% comment %} table above {% endcomment %}
+				{% comment %} table below {% endcomment %}
+{#				{% if freq|check_empty %}#}
+{#				<table class="table table-striped table-bordered container" id="container_table">#}
+{#					<thead class="thead-dark">#}
+{#						<tr>#}
+{#						<th scope="col">Frequency after stemming</th>#}
+{#						<th scope="col">Stem Word</th>#}
+{#						<th scope="col">#</th>#}
+{#						<th scope="col">Origin Frequency</th>#}
+{#						<th scope="col">Origin Word</th>#}
+{#						<th scope="col">#</th>#}
+{#						</tr>#}
+{#					</thead>#}
+{#					<tbody>#}
+{#						{% for i in top_words_ori %}#}
+{#						<tr>#}
+{#						<th scope="row">{{ freq_stem|get_element:forloop.counter0 }}</th>#}
+{#							<td>{{ top_words_stem|get_element:forloop.counter0 }}</td>#}
+{#							<td>{{ forloop.counter0 }}</td>#}
+{#							<td>{{ freq_ori|get_element:forloop.counter0 }}</td>#}
+{#							<td>{{ i }}</td>#}
+{#							<td>{{ forloop.counter0 }}</td>#}
+{#						</tr>#}
+{#						{% endfor %}#}
+{#					</tbody>#}
+{#				</table>#}
+{#				{% endif %}#}
+{#				{% comment %} table above {% endcomment %}#}
+			</div>
+		</div> <!-- /#page-content-wrapper -->
+	</div> <!-- /#wrapper -->
+	<!-- Bootstrap core JavaScript -->
+	<script src="js/jquery.min.js"></script>
+	<script src="js/bootstrap.bundle.min.js"></script> <!-- Menu Toggle Script -->
+	<script>
+		$(function(){
+		$("#menu-toggle").click(function(e) {
+			e.preventDefault();
+			$("#wrapper").toggleClass("toggled");
+		});
+
+		$(window).resize(function(e) {
+			if($(window).width()<=768){
+			$("#wrapper").removeClass("toggled");
+			}else{
+			$("#wrapper").addClass("toggled");
+			}
+		});
+		});
+		
+	</script>
+	{% comment %} background above {% endcomment %}
+
+</body>
+</html>

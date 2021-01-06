@@ -1,0 +1,245 @@
+{% load static %}
+{% load search_extra %}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>IIrHW5</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href={% static "css/Highlight-Blue.css" %}>
+    <link rel="stylesheet" href={% static "css/hw4_styles.css" %}>
+</head>
+
+<body>
+    <div class="highlight-blue">
+        <div class="container">
+            <div class="intro">
+                <h2 class="text-center">Inverted index / Mesh term</h2>
+            </div>
+        </div>
+    </div>
+    <div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <form name="form" id="form">
+                        <input type="text" name="keyword" id="keyword"/>
+                        <input type="button" class="btn btn-outline-primary" name="submit" value="query" onclick="sendQuery();" />
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div>
+{#        choose method and tf #}
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3">
+                    <span class="badge badge-pill badge-primary">tf</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge badge-pill badge-success">method</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge badge-pill badge-primary">tf</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge badge-pill badge-success">method</span>
+                </div>
+            </div>
+{# showed word #}
+            <div class="row">
+                <div class="col-md-3">
+                    <p id="l_tf_word">not sorted by tf</p>
+                </div>
+                <div class="col-md-3">
+                    <p id="l_method_word">BSBI</p>
+                </div>
+                <div class="col-md-3">
+                    <p id="r_tf_word">not sorted by tf</p>
+                </div>
+                <div class="col-md-3">
+                    <p id="r_method_word">BSBI</p>
+                </div>
+            </div>
+        </div>
+{#        choose formula #}
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false" type="button">tf </button>
+                        <div class="dropdown-menu"><a class="dropdown-item" id="l_tf_1">apply</a><a class="dropdown-item" id="l_tf_2">not apply</a></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dropdown"><button class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-expanded="false" type="button">method </button>
+                        <div class="dropdown-menu"><a class="dropdown-item" id="l_method_1">BSBI</a><a class="dropdown-item" id="l_method_2">SPIMI</a></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false" type="button">tf </button>
+                        <div class="dropdown-menu"><a class="dropdown-item" id="r_tf_1">apply</a><a class="dropdown-item" id="r_tf_2">not apply</a></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dropdown"><button class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-expanded="false" type="button">method </button>
+                        <div class="dropdown-menu"><a class="dropdown-item" id="r_method_1">BSBI</a><a class="dropdown-item" id="r_method_2">SPIMI</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+{#        mesh#}
+        <div class="container">
+            <div class="row">
+                <p id="mesh block">mesh:</p>
+            </div>
+        </div>
+
+{#   search result #}
+    <div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-group" id="l_title_list">
+{#                        {% for i in l_titles %}#}
+{#                            <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">#}
+{#                                <div class="d-flex w-100 justify-content-between">#}
+{#                                  <small>tfidf: {{ l_weights|get_element:forloop.counter0 }}</small>#}
+{#                                </div>#}
+{#                                <p class="mb-1">{{ i }}</p>#}
+{#                              </a>#}
+{#                        {% endfor %}#}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-group" id="r_title_list">
+{#                        {% for i in r_titles %}#}
+{#                            <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">#}
+{#                                <div class="d-flex w-100 justify-content-between">#}
+{#                                  <h5 class="mb-1">{{ i }}</h5>#}
+{#                                  <small>tfidf: {{ r_weights|get_element:forloop.counter0 }}</small>#}
+{#                                </div>#}
+{#                                <p class="mb-1">{{ i }}</p>#}
+{#                              </a>#}
+{#                        {% endfor %}#}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var l_tf = 0;
+        var l_method = 0;
+        var r_tf = 0;
+        var r_method = 0;
+
+        {#window.onload = function () {#}
+        {##}
+        {##}
+        {#        left tf #}
+        document.getElementById('l_tf_1').addEventListener('click', function () {
+            document.getElementById('l_tf_word').innerHTML = "sorted by tf";
+            l_tf = 1;
+        });
+        document.getElementById('l_tf_2').addEventListener('click', function () {
+            document.getElementById('l_tf_word').innerHTML = "not sorted by tf";
+            l_tf = 0;
+        });
+        {#left idf#}
+        document.getElementById('l_method_1').addEventListener('click', function () {
+            document.getElementById('l_method_word').innerHTML = "BSBI";
+            l_method = 0;
+        });
+        document.getElementById('l_method_2').addEventListener('click', function () {
+            document.getElementById('l_method_word').innerHTML = "SPIMI";
+            l_method = 1;
+        });
+        {# right tf #}
+        document.getElementById('r_tf_1').addEventListener('click', function () {
+            document.getElementById('r_tf_word').innerHTML = "sorted by tf";
+            r_tf = 1;
+        });
+        document.getElementById('r_tf_2').addEventListener('click', function () {
+            document.getElementById('r_tf_word').innerHTML = "not sorted by tf";
+            r_tf = 0;
+        });
+        {# right method #}
+        document.getElementById('r_method_1').addEventListener('click', function () {
+            document.getElementById('r_method_word').innerHTML = "BSBI";
+            r_method = 0;
+        });
+        document.getElementById('r_method_2').addEventListener('click', function () {
+            document.getElementById('r_method_word').innerHTML = "SPIMI";
+            r_method = 1;
+        });
+
+        function sendQuery(){
+            // clear list
+            document.getElementById("l_title_list").innerHTML = "";
+            document.getElementById("r_title_list").innerHTML = "";
+
+            // get input keyword
+            const keyword = $('[id="keyword"]').val();
+
+            // left
+            $.ajax({
+                url: "/search_engine/hw5_search",
+                type: 'POST',
+                data:{keyword:keyword, bsbi_spimi: l_method, tf: l_tf},
+                success: function (data) {
+                    var l_list = document.getElementById("l_title_list");
+
+                    // get mesh dictionary
+                    var mesh_dict = document.getElementById("mesh block");
+                    mesh_dict.innerHTML = "mesh synonym:";
+
+                    for (i=0;i<10;i++){
+                        l_list.innerHTML += '<a href="#" class="list-group-item list-group-item-action flex-column align-items-start">\n' +
+                            '                                <div class="d-flex w-100 justify-content-between">\n' +
+                            '                                  <small>query term freq:' + data['weights'][i] + '</small>\n' +
+                            '                                </div>\n' +
+                            '                                <p class="mb-1">' + data['titles'][i] + '</p>\n' +
+                            '                               <small>'+ data['abstract'][i] + '</small>' +
+                            '                              </a>';
+                    }
+
+                    mesh_dict.innerHTML += '\n<strong>' + data['mesh_dict'] + '</strong>\n';
+                },
+                error: function () {
+                    alert("query failed")
+                }
+            });
+
+            // right
+            $.ajax({
+                url: "/search_engine/hw5_search",
+                type: 'POST',
+                data:{keyword:keyword, bsbi_spimi: r_method, tf: r_tf},
+                success: function (data2) {
+                    var r_list = document.getElementById("r_title_list");
+
+                    for (i=0;i<10;i++){
+                        r_list.innerHTML += '<a href="#" class="list-group-item list-group-item-action flex-column align-items-start">\n' +
+                            '                                <div class="d-flex w-100 justify-content-between">\n' +
+                            '                                  <small>query term freq:' + data2['weights'][i] + '</small>\n' +
+                            '                                </div>\n' +
+                            '                                <p class="mb-1">' + data2['titles'][i] + '</p>\n' +
+                            '                               <small>'+ data2['abstract'][i] + '</small>' +
+                            '                              </a>';
+                    }
+                },
+                error: function () {
+                    alert("query failed")
+                }
+            });
+        };
+
+    </script>
+</body>
+
+</html>

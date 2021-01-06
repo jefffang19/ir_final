@@ -1,0 +1,8 @@
+beautifulsoup4==4.9.1
+django-crispy-forms==1.9.2
+nltk==3.5
+lxml==4.5.2
+pandas==1.1.3
+pyspellchecker==0.5.5
+gensim==3.8.0
+tsnecuda==2.1.0

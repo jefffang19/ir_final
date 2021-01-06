@@ -1,0 +1,527 @@
+{% load static %}
+{% load search_extra %}
+{% load crispy_forms_tags %}
+
+<html lang="en">
+<head>
+
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+	
+	<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+	<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<!------ Include the above in your HEAD tag ---------->
+
+	<title>Scatter Chart</title>
+	<script src={% static "js/chart.js" %}></script>
+	<script src={% static "js/chart_utils.js" %}></script>
+
+	<link rel="stylesheet" href="{% static 'css/page_theme.css' %}">
+	<style src={% static "css/page_theme.css" %}></style>
+
+	<style>
+		canvas {
+			-moz-user-select: none;
+			-webkit-user-select: none;
+			-ms-user-select: none;
+		}
+	</style>
+
+
+</head>
+<body>
+	{% comment %} background below {% endcomment %}
+	<nav class="navbar navbar-expand navbar-dark bg-primary"> <a href="#menu-toggle" id="menu-toggle" class="navbar-brand"><span class="navbar-toggler-icon"></span></a> <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExample02" aria-controls="navbarsExample02" aria-expanded="false" aria-label="Toggle navigation"> <span class="navbar-toggler-icon"></span> </button>
+		<div class="collapse navbar-collapse" id="navbarsExample02">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item active"> <a class="nav-link" href="{% url 'zipf'%}">Home <span class="sr-only">(current)</span></a> </li>
+			</ul>
+			<form class="form-inline my-2 my-md-0"> </form>
+		</div>
+	</nav>
+	<div id="wrapper" class="toggled">
+		<!-- Sidebar -->
+		<div id="sidebar-wrapper">
+			<ul class="sidebar-nav">
+				<li> <a>_</a> </li>
+				<li> <button type="button" id="origin" class="btn btn-outline-secondary">Original</button> </li>
+				<li> <a>_</a> </li>
+				<li> <button type="button" id="stemming" class="btn btn-outline-secondary">Stemming</button> </li>
+				<li> <a>_</a> </li>
+				<li> <button type="button" id="both" class="btn btn-outline-secondary">Both</button> </li>
+				<li> <a>_</a> </li>
+				<li> <button type="button" id="covidOri" class="btn btn-outline-secondary">Compare Covid-19 Origin</button> </li>
+				<li> <a>_</a> </li>
+				<li> <button type="button" id="covidStem" class="btn btn-outline-secondary">Compare Covid-19 Stemming</button> </li>
+				<li> <a>_</a> </li>
+				<li> <button type="button" id="covidOriReg" class="btn btn-outline-secondary">Compare Rank Origin</button> </li>
+				<li> <a>_</a> </li>
+				<li> <button type="button" id="covidStemReg" class="btn btn-outline-secondary">Compare Rank Stemming</button> </li>
+				<li> <a>_</a> </li>
+			</ul>
+		</div> <!-- /#sidebar-wrapper -->
+		<!-- Page Content -->
+
+		{% comment %} radio buttons {% endcomment %}
+		<br>
+		<div class="btn-group btn-group-toggle" data-toggle="buttons">
+			<div class="radio buttons">
+				<label class="btn btn-secondary active">
+					<input type="radio" name="options" id="option1" autocomplete="off" checked onclick="openClass('table_stem')"> Stemming Frequency Table
+				</label>
+				<label class="btn btn-secondary">
+					<input type="radio" name="options" id="option2" autocomplete="off" checked onclick="openClass('table_ori')"> Origin Frequency Table
+				</label>
+				<label class="btn btn-secondary active">
+					<input type="radio" name="options" id="option3" autocomplete="off" checked onclick="openClass('canvas')"> Zipf Chart
+				</label>
+				<label class="btn btn-secondary active">
+					<input type="radio" name="options" id="option4" autocomplete="off" checked onclick="openClass('search_result')"> Search Result
+				</label>
+				<label class="btn btn-secondary active">
+					<input type="radio" name="options" id="option5" autocomplete="off" checked onclick="openClass('both')"> All
+				</label>
+			</div>
+		</div>
+		{% comment %} radio buttons end {% endcomment %}
+
+		{% comment %} Make sure to keep all page content within the #page-content-wrapper {% endcomment %}
+		<div id="page-content-wrapper">
+			{% comment %} search bar {% endcomment %}
+			<form action="{% url "zipf_search" %}" method="post">
+				{% csrf_token %}
+				{% crispy form %}
+				{% comment %} <input type="submit" value="submit"> {% endcomment %}
+			</form>
+			{% comment %} end search_bar {% endcomment %}
+			<div class="container-fluid">
+				<h1 class="container" id="chart_title">Covid-19 and "{{ chart_title }}" subset Zipf Chart</h1>
+				{% comment %} chart below {% endcomment %}
+				<div style="width:75%">
+					<canvas id="canvas" class="container"></canvas>
+				</div>
+				{% comment %} <button id="show_all" class="btn btn-outline-primary">Show All</button> {% endcomment %}
+				<script>
+					var color = Chart.helpers.color;
+					var freq = {{ freq|escapejs}}
+					var freq_raw = {{ freq_raw|escapejs }}
+					var covid_raw = {{ origin_covid_set_freq|escapejs }}
+					var covid_stem = {{ stem_covid_set_freq|escapejs }}
+
+					{% comment %} generate Stem data {% endcomment %}
+					function getDataSet() {
+						var dataset = [];
+
+						dataset.push({label: "Stemming",
+							backgroundColor: window.chartColors.red,
+							data: generateData(freq) })
+						return dataset;
+					}
+
+					function generateData(list) {
+						var data = [];
+						
+						for (var i = 0; i < 1000; i++){
+							data.push({
+								x: i,
+								y: list[i]
+							});
+						}
+						return data;
+						
+					}
+
+					function generateDataCmp(list) {
+						var data = [];
+						
+						for (var i = 0; i < 100; i++){
+							data.push({
+								x: i,
+								y: list[i]
+							});
+						}
+						
+						return data;
+						
+					}
+
+					function generateDataReg(par, list) {
+						var data = [];
+						
+						if (par == 0){
+							for (var i = 0; i < 100; i++){
+								data.push({
+									x: i,
+									y: i
+								});
+							}
+						} else {
+							for (var i = 0; i < 100; i++){
+								data.push({
+									x: i,
+									y: list[i]
+								});
+							}
+						}
+						
+						return data;
+						
+					}
+					
+					{% comment %} generate origin data {% endcomment %}
+					function getOriginDataSet() {
+						var dataset = [];
+						
+						dataset.push({label: "Origin",
+							backgroundColor: window.chartColors.blue,
+							data: generateData(freq_raw) })
+						return dataset;
+					}
+
+					{% comment %} generate Both data {% endcomment %}
+					function getBothDataSet() {
+						var dataset = [];
+						
+						dataset.push({label: "Origin",
+							backgroundColor: window.chartColors.blue,
+							data: generateData(freq_raw) })
+
+						dataset.push({label: "Stemming",
+							backgroundColor: window.chartColors.red,
+							data: generateData(freq) })
+
+						return dataset;
+					}
+
+					{% comment %} generate Both covid origin and Subset origin {% endcomment %}
+					function getCovidOriDataSet() {
+						var dataset = [];
+						
+						dataset.push({label: "Subset Origin",
+							backgroundColor: window.chartColors.blue,
+							data: generateDataCmp(freq_raw) })
+
+						dataset.push({label: "Covid-19 Origin",
+							backgroundColor: window.chartColors.red,
+							data: generateDataCmp(covid_raw) })
+
+						return dataset;
+					}
+
+					{% comment %} generate Both covid origin and Subset origin {% endcomment %}
+					function getCovidStemDataSet() {
+						var dataset = [];
+						
+						dataset.push({label: "Subset Stemming",
+							backgroundColor: window.chartColors.blue,
+							data: generateDataCmp(freq) })
+
+						dataset.push({label: "Covid-19 Stemming",
+							backgroundColor: window.chartColors.red,
+							data: generateDataCmp(covid_stem) })
+
+						return dataset;
+					}
+
+					{% comment %} generate Regression for Covid Origin {% endcomment %}
+					function getCovidOriRegDataSet() {
+						var dataset = [];
+						
+						dataset.push({label: "Subset Origin Words Ranking",
+							backgroundColor: window.chartColors.blue,
+							data: generateDataReg(0, []) })
+
+						dataset.push({label: "Covid-19 Origin Words Ranking",
+							backgroundColor: window.chartColors.red,
+							data: generateDataReg(1, {{ origin_covid_set_rank|escapejs }}) })
+
+						return dataset;
+					}
+
+					{% comment %} generate Regression for Covid Stem {% endcomment %}
+					function getCovidStemRegDataSet() {
+						var dataset = [];
+						
+						dataset.push({label: "Subset Stemming Words Ranking",
+							backgroundColor: window.chartColors.blue,
+							data: generateDataReg(0, []) })
+
+						dataset.push({label: "Covid-19 Stemming Words Ranking",
+							backgroundColor: window.chartColors.red,
+							data: generateDataReg(1, {{ stem_covid_set_rank|escapejs }}) })
+
+						return dataset;
+					}
+
+					var scatterChartData = {
+						datasets : getDataSet(),
+					};
+
+					var scatterChartDataOrigin = {
+						datasets : getOriginDataSet(),
+					};
+
+					var scatterChartDataBoth = {
+						datasets : getBothDataSet(),
+					};
+
+					var scatterChartDataCovidOri = {
+						datasets : getCovidOriDataSet(),
+					};
+
+					var scatterChartDataCoividStem = {
+						datasets : getCovidStemDataSet(),
+					};
+
+					var scatterChartRegCoividOri = {
+						datasets : getCovidOriRegDataSet(),
+					};
+
+					var scatterChartRegCoividStem = {
+						datasets : getCovidStemRegDataSet(),
+					};
+
+					window.onload = function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter = Chart.Scatter(ctx, {
+							data: scatterChartData,
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart after stemming"
+								},
+							}
+						});
+					};
+
+					document.getElementById('origin').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: scatterChartDataOrigin,
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart before stemming",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('stemming').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: scatterChartData,
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart after stemming",
+								},
+							}
+						});
+						window.myScatter.update();
+					});
+
+					document.getElementById('both').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: scatterChartDataBoth,
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart Both",
+								},
+							}
+						});
+						window.myScatter.update();
+						win
+					});
+
+					document.getElementById('covidOri').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: scatterChartDataCovidOri,
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart Compare with Covid-19 Origin",
+								},
+							}
+						});
+						window.myScatter.update();
+						win
+					});
+
+					document.getElementById('covidStem').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: scatterChartDataCoividStem,
+							options: {
+								title: {
+									display: true,
+									text: "Zipf Chart Compare with Covid-19 Stemming",
+								},
+							}
+						});
+						window.myScatter.update();
+						win
+					});
+
+					document.getElementById('covidOriReg').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: scatterChartRegCoividOri,
+							options: {
+								title: {
+									display: true,
+									text: "Compare with Covid-19 Origin word ranking",
+								},
+							}
+						});
+						window.myScatter.update();
+						win
+					});
+
+					document.getElementById('covidStemReg').addEventListener('click', function() {
+						var ctx = document.getElementById('canvas').getContext('2d');
+						window.myScatter.destroy();
+						window.myScatter = Chart.Scatter(ctx, {
+							data: scatterChartRegCoividStem,
+							options: {
+								title: {
+									display: true,
+									text: "Compare with Covid-19 Stemming word ranking",
+								},
+							}
+						});
+						window.myScatter.update();
+						win
+					});
+
+					{% comment %} this function listens radio buttons to switch tab {% endcomment %}
+					function openClass(className) {
+						var i, x;
+						// get class="container" in page
+						x = document.getElementsByClassName("container");
+						//for all x class="container"  => display:none (hide show)
+						for (i = 0; i < x.length; i++) {
+							x[i].style.display = "none";
+						}
+						if (className.localeCompare('both') == 0) {
+							document.getElementById("canvas").style.display = "block";
+							document.getElementById("table_ori").style.display = "table";
+							document.getElementById("table_stem").style.display = "table";
+							document.getElementById("chart_title").style.display = "block";
+						} 
+						//show only clicked content
+						else if (className.localeCompare('table_ori') == 0 || className.localeCompare('table_stem') == 0 ) {
+							document.getElementById(className).style.display = "table";
+						} else if (className.localeCompare('search_result') == 0) { 
+							document.getElementById(className).style.display = "block";
+							document.getElementById("search_title").style.display = "table";
+						}else {
+  							document.getElementById(className).style.display = "block";
+							document.getElementById("chart_title").style.display = "block";
+						}
+					}
+				</script>
+				{% comment %} chart above {% endcomment %}
+				<br>
+
+				{% comment %} table below {% endcomment %}
+				<table class="table table-bordered table-hover container" id="table_ori">
+					<thead class="thead-dark">
+						<tr>
+						<th scope="col">Origin Covid19 Set Word Ranking</th>
+						<th scope="col">Origin Covid19 Set Frequency</th>
+						<th scope="col">Frequency on Origin</th>
+						<th scope="col">Origin Word</th>
+						<th scope="col">#</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for i in top_words_raw %}
+						<tr>
+						<th scope="row">{{ origin_covid_set_rank|get_element:forloop.counter0}}</th>
+							<td>{{ origin_covid_set_freq|get_element:forloop.counter0 }}</td>
+							<td>{{ freq_raw|get_element:forloop.counter0 }}</td>
+							<td>{{ i }}</td>
+							<td>{{ forloop.counter0 }}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+				{% comment %} table above {% endcomment %}
+				{% comment %} table below {% endcomment %}
+				<table class="table table-bordered table-hover container" id="table_stem">
+					<thead class="thead-dark">
+						<tr>
+						<th scope="col">Origin Covid19 Set Word Ranking</th>
+						<th scope="col">Origin Covid19 Set Frequency</th>
+						<th scope="col">Frequency after stemming</th>
+						<th scope="col">Stem Word</th>
+						<th scope="col">#</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for i in top_words %}
+						<tr>
+						<th scope="row">{{ stem_covid_set_rank|get_element:forloop.counter0}}</th>
+							<td>{{ stem_covid_set_freq|get_element:forloop.counter0 }}</td>
+							<td>{{ freq|get_element:forloop.counter0 }}</td>
+							<td>{{ i }}</td>
+							<td>{{ forloop.counter0 }}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+				{% comment %} table above {% endcomment %}
+			</div>
+
+			{% comment %} search result {% endcomment %}
+			<h3 class="container" id="search_title">{{search_title}}</h5>
+			<div class="list-group container" id="search_result">
+				{% for i in titles_name %}
+					<a href="{% url 'show_pk_article' pk=article_pk|get_element:forloop.counter0 keyword=chart_title %}" class="list-group-item list-group-item-action flex-column align-items-start">
+						<div class="d-flex w-100 justify-content-between">
+						<small class="text-muted">{{ titles_freq|get_element:forloop.counter0 }} matched</small>
+						<h5 class="mb-1">{{ i|remove_period }}</h5>
+						</div>
+						{% comment %} <small class="text-muted">Donec id elit non mi porta.</small> {% endcomment %}
+					</a>
+				{% endfor %}
+			</div>
+	{% comment %} end search result {% endcomment %}
+		</div> <!-- /#page-content-wrapper -->
+	</div> <!-- /#wrapper -->
+
+	<!-- Bootstrap core JavaScript -->
+	<script src="js/jquery.min.js"></script>
+	<script src="js/bootstrap.bundle.min.js"></script> <!-- Menu Toggle Script -->
+	<script>
+		$(function(){
+		$("#menu-toggle").click(function(e) {
+			e.preventDefault();
+			$("#wrapper").toggleClass("toggled");
+		});
+
+		$(window).resize(function(e) {
+			if($(window).width()<=768){
+			$("#wrapper").removeClass("toggled");
+			}else{
+			$("#wrapper").addClass("toggled");
+			}
+		});
+		});
+		
+	</script>
+	{% comment %} background above {% endcomment %}
+
+</body>
+</html>

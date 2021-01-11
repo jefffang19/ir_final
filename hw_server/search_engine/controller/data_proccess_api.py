@@ -310,6 +310,14 @@ def get_evidence(request):
                             come_from_journel_if.append(evidence_setences_objects[cnt].article.impact_factor)
                         break
 
+        evid_jour_if_pair = [[all_mark_setences[i], come_from_journel[i], come_from_journel_if[i]] for i in range(len(come_from_journel))]
+
+        # sort by impact factor
+        sorted_evid_jour_if_pair = sorted(evid_jour_if_pair, key=lambda s: s[2], reverse=True)
+
+        all_mark_setences = [i[0] for i in sorted_evid_jour_if_pair]
+        come_from_journel = [i[1] for i in sorted_evid_jour_if_pair]
+        come_from_journel_if = [i[2] for i in sorted_evid_jour_if_pair]
 
         return_dict = {
             'mirna': [i.name for i in mirna_family],
@@ -318,6 +326,7 @@ def get_evidence(request):
             'evidence_sentences': all_mark_setences,
             'journals': come_from_journel,
             'impact_factors': come_from_journel_if
+            # 'evid_jour_if_pair': sorted_evid_jour_if_pair
         }
 
         return JsonResponse(return_dict, safe=False)

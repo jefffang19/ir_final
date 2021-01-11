@@ -160,6 +160,22 @@ def expressions():
     ]
     return expression_keyword
 
+def sorted_expression():
+    sorted_expression_keyword = []
+
+    for exp in expressions():
+        expression_keyword_subgroup = []
+        for kywd in exp:
+            if kywd not in expression_keyword_subgroup:
+                expression_keyword_subgroup.append(kywd)
+
+            # sort by length
+            expression_keyword_subgroup = sorted(expression_keyword_subgroup, key=len, reverse=True)
+
+        sorted_expression_keyword.append(expression_keyword_subgroup)
+
+    return sorted_expression_keyword
+
 def process_sentence(request):
     import re
     import nltk
@@ -215,6 +231,8 @@ def process_sentence(request):
 
 @csrf_exempt
 def get_evidence(request):
+    import re
+
     # user search
     if request.method == 'POST':
         # get search word
@@ -229,9 +247,42 @@ def get_evidence(request):
 
         cancer_object = Cancer.objects.filter(name=search_cancer)[0]
 
+        # get the sentences with evidence expression in it
+        evidence_setences = []
+        for s in Sentence.objects.filter(mirna = mirna_family[0], cancer = cancer_object):
+            evidence_setences.append(s.sent)
+
+        marked_sentences = []
+
+        # now we high light the sentences
+        for exp in sorted_expression():
+            for kywd in exp:
+                marked_sentence = ""
+
+                a = re.search(kywd, evidence_setences[0])
+                if a != None:
+                    end_mark = False
+                    # print sentence with marker
+                    for j, w in enumerate(evidence_setences[0]):
+                        if (j == a.start() or j == a.end()):
+                            if not end_mark:
+                                marked_sentence += '<mark>'
+                                end_mark = True
+                            else:
+                                marked_sentence += '</mark>'
+
+                        marked_sentence += str(w)
+
+                    if marked_sentence != "":
+                        marked_sentences.append(marked_sentence)
+                    break
+
+
         return_dict = {
             'mirna': [i.name for i in mirna_family],
-            'cancer': cancer_object.name
+            'cancer': cancer_object.name,
+            # 'expression': sorted_expression(),
+            'evidence_sentences': marked_sentences,
         }
 
         return JsonResponse(return_dict, safe=False)

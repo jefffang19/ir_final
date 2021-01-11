@@ -15,6 +15,8 @@ def get_evidence(request):
         search_cancer = request.POST['cancer']
         search_mirna = request.POST['mirna']
 
+        print(search_cancer, search_mirna)
+
         # search for (eg. miR-34 and microRNA-34 )
         mirna_family = []
         for i in MirnaFamily.objects.filter(root__name=search_mirna):
@@ -34,6 +36,7 @@ def get_evidence(request):
         come_from_journel = []
         come_from_journel_if = []
         for cnt, evid_sent in enumerate(evidence_setences):
+            # print(evid_sent)
             # find mirna and cancer location in a sentence
             mirna_loc = []
             cancer_loc = []
@@ -44,46 +47,58 @@ def get_evidence(request):
                 if a != None:
                     cancer_loc = [a.start(), a.end()]
 
+            expressions_loc = []
+
             # now we high light the sentences
             for exp in sorted_expression():
                 for kywd in exp:
-                    marked_sentence = ""
-
                     a = re.search(kywd, evid_sent.lower())
                     if a != None:
-                        # decide when to use <mark> and </mark>
-                        end_mark_exp = False
-                        end_mark_can = False
-                        end_mark_mi = False
+                        expressions_loc.append([a.start(), a.end()])
 
-                        # print sentence with marker
-                        for j, w in enumerate(evid_sent):
-                            if (j == a.start() or j == a.end()):
-                                if not end_mark_exp:
-                                    marked_sentence += '<a href="#" class="text-primary">'
-                                    end_mark_exp = True
-                                else:
-                                    marked_sentence += '</a>'
-                            elif (j == cancer_loc[0] or j == cancer_loc[1]):
-                                if not end_mark_can:
-                                    marked_sentence += '<a href="#" class="text-success">'
-                                    end_mark_can = True
-                                else:
-                                    marked_sentence += '</a>'
-                            elif (j == mirna_loc[0] or j == mirna_loc[1]):
-                                if not end_mark_mi:
-                                    marked_sentence += '<a href="#" class="text-danger">'
-                                    end_mark_mi = True
-                                else:
-                                    marked_sentence += '</a>'
+            # if no expressions_loc
+            if len(expressions_loc) == 0:
+                continue
+            # else:
+            #     print(expressions_loc)
 
-                            marked_sentence += str(w)
+            # decide when to use <mark> and </mark>
+            end_mark_exp = False
+            end_mark_can = False
+            end_mark_mi = False
+            marked_sentence = ''
 
-                        if marked_sentence != "":
-                            all_mark_setences.append(marked_sentence)
-                            come_from_journel.append(evidence_setences_objects[cnt].article.journal)
-                            come_from_journel_if.append(evidence_setences_objects[cnt].article.impact_factor)
-                        break
+            # print sentence with marker
+            for j, w in enumerate(evid_sent):
+                for exp_loc in expressions_loc:
+                    if (j == exp_loc[0] or j == exp_loc[1]):
+                        if not end_mark_exp:
+                            marked_sentence += '<a href="#" class="text-primary">'
+                            end_mark_exp = True
+                        else:
+                            marked_sentence += '</a>'
+                            end_mark_exp = False
+
+                if (j == cancer_loc[0] or j == cancer_loc[1]):
+                    if not end_mark_can:
+                        marked_sentence += '<a href="#" class="text-success">'
+                        end_mark_can = True
+                    else:
+                        marked_sentence += '</a>'
+                elif (j == mirna_loc[0] or j == mirna_loc[1]):
+                    if not end_mark_mi:
+                        marked_sentence += '<a href="#" class="text-danger">'
+                        end_mark_mi = True
+                    else:
+                        marked_sentence += '</a>'
+
+                marked_sentence += str(w)
+
+            if marked_sentence != "" and marked_sentence not in all_mark_setences:
+                all_mark_setences.append(marked_sentence)
+                come_from_journel.append(evidence_setences_objects[cnt].article.journal)
+                come_from_journel_if.append(evidence_setences_objects[cnt].article.impact_factor)
+
 
         evid_jour_if_pair = [[all_mark_setences[i], come_from_journel[i], come_from_journel_if[i]] for i in range(len(come_from_journel))]
 

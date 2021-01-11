@@ -117,7 +117,9 @@ def get_evidence(request):
 
         import numpy as np
 
-        avg_if = np.mean(np.array(impact_factors))
+        avg_if = 0
+        if len(impact_factors) != 0:
+            avg_if = np.mean(np.array(impact_factors))
 
         print(len(arts))
         evidence_score = len(all_mark_setences) * len(arts) * avg_if

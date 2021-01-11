@@ -7,7 +7,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>IIrHW5</title>
+    <title>IIr Final Project</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href={% static "css/Highlight-Blue.css" %}>
     <link rel="stylesheet" href={% static "css/hw4_styles.css" %}>
@@ -83,6 +83,10 @@
                         20.	miR-31</p>
                 </div>
             </div>
+            <div class="row">
+                <p>Evidence Score = </p>
+                <p id = 'evid_score'></p>
+            </div>
         </div>
     </div>
 
@@ -116,6 +120,8 @@
                   '</thead>' +
                   '<tbody>';
 
+            document.getElementById("evid_score").innerHTML = '';
+
             // get input keyword
             const keyword_cancer = $('[id="keyword_cancer"]').val();
             const keyword_mirna = $('[id="keyword_mirna"]').val();
@@ -126,6 +132,7 @@
                 data:{cancer:keyword_cancer, mirna: keyword_mirna},
                 success: function (data) {
                     var sent_list = document.getElementById("sentences_list");
+                    var evid_score = document.getElementById("evid_score");
 
                     for (i=0;i<data['evidence_sentences'].length;i++){
                         sent_list.innerHTML += '<tr>' +
@@ -135,6 +142,8 @@
                     }
 
                     sent_list.innerHTML += '</tbody>';
+                    evid_score.innerHTML += '<p>' + data['evidence_score'] + '</p>';
+
                 },
                 error: function () {
                     alert("query failed")

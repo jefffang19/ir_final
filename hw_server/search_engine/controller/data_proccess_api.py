@@ -210,9 +210,9 @@ def process_sentence(request):
 
             # find the sentences containing mi-RNA and Cancer
             for s in sent:
-                re_result = re.search(miRNA.name, s)  # find mi-RNA
+                re_result = re.search(miRNA.name.lower(), s.lower())  # find mi-RNA
                 if re_result != None:
-                    re_result = re.search(cancer, s)  # find cancer
+                    re_result = re.search(cancer, s.lower())  # find cancer
                     if re_result != None:
                         evidence.append(s)
 
@@ -262,10 +262,10 @@ def get_evidence(request):
             # find mirna and cancer location in a sentence
             mirna_loc = []
             cancer_loc = []
-            a = re.search(mirna_family[0].name, evid_sent)  # find mi-RNA
+            a = re.search(mirna_family[0].name.lower(), evid_sent.lower())  # find mi-RNA
             if a != None:
                 mirna_loc = [a.start(), a.end()]
-                a = re.search(cancer_object.name.lower(), evid_sent)  # find cancer
+                a = re.search(cancer_object.name.lower(), evid_sent.lower())  # find cancer
                 if a != None:
                     cancer_loc = [a.start(), a.end()]
 
@@ -274,7 +274,7 @@ def get_evidence(request):
                 for kywd in exp:
                     marked_sentence = ""
 
-                    a = re.search(kywd, evid_sent)
+                    a = re.search(kywd, evid_sent.lower())
                     if a != None:
                         # decide when to use <mark> and </mark>
                         end_mark_exp = False

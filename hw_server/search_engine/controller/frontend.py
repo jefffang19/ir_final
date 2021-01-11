@@ -15,6 +15,10 @@ def get_evidence(request):
         search_cancer = request.POST['cancer']
         search_mirna = request.POST['mirna']
 
+        # remove space's in begin and end
+        search_mirna = search_mirna.rstrip().lstrip()
+        search_cancer = search_cancer.rstrip().lstrip()
+
         print(search_cancer, search_mirna)
 
         # search for (eg. miR-34 and microRNA-34 )

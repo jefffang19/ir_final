@@ -109,13 +109,27 @@ def get_evidence(request):
         come_from_journel = [i[1] for i in sorted_evid_jour_if_pair]
         come_from_journel_if = [i[2] for i in sorted_evid_jour_if_pair]
 
+        # calculate score
+        # key senteces * num of articles * ( avg impact factor )
+        # we +1 for all impact factor because there is some journals whose impact factor is zero
+        arts = Article.objects.filter(cancer=search_cancer, mirna=search_mirna)
+        impact_factors = [i.impact_factor + 1 for i in arts]
+
+        import numpy as np
+
+        avg_if = np.mean(np.array(impact_factors))
+
+        print(len(arts))
+        evidence_score = len(all_mark_setences) * len(arts) * avg_if
+
         return_dict = {
             'mirna': [i.name for i in mirna_family],
             'cancer': cancer_object.name,
             # 'expression': sorted_expression(),
             'evidence_sentences': all_mark_setences,
             'journals': come_from_journel,
-            'impact_factors': come_from_journel_if
+            'impact_factors': come_from_journel_if,
+            'evidence_score': evidence_score
             # 'evid_jour_if_pair': sorted_evid_jour_if_pair
         }
 

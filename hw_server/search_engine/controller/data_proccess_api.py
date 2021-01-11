@@ -1,5 +1,6 @@
-from ..models import Article, Word, StemFreq, OriginFreq, Bmc
+from ..models import Article, Mirna, MirnaFamily, Cancer, Sentence
 from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 def import_csv(request):
     import pandas as pd
@@ -38,10 +39,12 @@ def import_csv(request):
             for j in journal:
                 impact_factors.append(journal_if[j])
 
-            print(len(titles), len(abstracts), len(journal), len(impact_factors))
+            for i in range(len(titles)):
+                a = Article(title=titles[i], abstract=abstracts[i], cancer=_dir.split('_')[1], mirna=_dir.split('_')[2], journal=journal[i], impact_factor=impact_factors[i])
+                a.save()
+
             impact_factors = []
 
-        print()
 
     return JsonResponse(journal_if)
 
@@ -60,3 +63,178 @@ def journal_list(request):
         journal_if[journals[i]] = impact_factors[i]
 
     return JsonResponse(journal_if)
+
+def insert_mirna(request):
+    mirnas_with_family = [
+        "miR-34a",
+        "miR-143",
+        "miR-22",
+        "miR-106a",
+        "miR-181a",
+        "miR-141",
+        "miR-15a",
+        "miR-25",
+        "miR-206",
+        "miR-1",
+        "miR-183",
+        "miR-17",
+        "miR-124",
+        "miR-26a",
+        "miR-21",
+        "miR-17-92",
+        "miR-184",
+        "miR-31"
+    ]
+
+    family = [
+        'miR-',
+        'microRNA-',
+    ]
+
+    for i in mirnas_with_family:
+        m = Mirna(name=i)
+        m.save()
+
+        for j in family:
+            m_w_f = MirnaFamily(name='{}{}'.format(j, i.split('miR-')[1]), root=m)
+            m_w_f.save()
+
+    other_mirnas = [
+        "let-17",
+        "LIN28b",
+    ]
+
+    for i in other_mirnas:
+        m = Mirna(name=i)
+        m.save()
+
+        m_w_f = MirnaFamily(name=i, root=m)
+        m_w_f.save()
+
+    return HttpResponse()
+
+
+def insert_cancer(request):
+    cancers = [
+        "Osteosarcoma",
+        "Ewing sarcoma",
+        "Chondrosarcoma",
+        "Multiple myeloma",
+        "Rhabdomyosarcom",
+        "Synovial sarcoma",
+        "Neuroblastoma",
+        "Cholangiocarcinoma",
+        "Retinoblastoma",
+        "Squamous cell carcinoma",
+    ]
+
+    for i in cancers:
+        c = Cancer(name=i)
+        c.save()
+
+    return HttpResponse()
+
+def expressions():
+    expression_keyword = [
+        ["promoted", "promotion", "promoter"],
+        ["higher expression", "expressing", "overexpression", "overexpressed"],
+        ["lower", "poor expression"],
+        ["regulates", "regulation", "up-regulated", "upregulated", "upregulation", "up-regulation"],
+        ["enhances", "enhancing"],
+        ["down-regulated", "downregulation", "down-regulation", " underexpression"],
+        ["suppresses", "suppression", "suppressed", "suppressor"],
+        ["repression", " repressing"],
+        ["increased"],
+        ["decreased"],
+        ["carcinogenesis"],
+        ["inhibited", "inhibition", "inhibitory"],
+        ["interacted", "interaction"],
+        ["axis"],
+        ["mediator", "mediated"],
+        ["metastasis"],
+        ["target", "target gene"],
+        ["oncomir"],
+        ["oncogenes"],
+        ["markers", "biomarkers"],
+        ["p53", "tumor suppressor"]
+    ]
+    return expression_keyword
+
+def process_sentence(request):
+    import re
+    import nltk
+
+    # get all the article
+    a = Article.objects.all()
+
+    all_evidence = []
+
+    # process every abstracts
+    for art in a:
+        # split sentences
+        sent = nltk.sent_tokenize(art.abstract)
+
+        # target
+        try:
+            miRNAs = [MirnaFamily.objects.filter(root__name=art.mirna)[0], MirnaFamily.objects.filter(root__name=art.mirna)[1]]
+        except:
+            miRNAs = [MirnaFamily.objects.filter(name=art.mirna)[0]]
+
+        cancer_object = Cancer.objects.filter(name=art.cancer)[0]  # need to convert to lowercase
+        cancer = cancer_object.name
+        cancer = cancer.lower()
+
+        # search the mirna family
+        for miRNA in miRNAs:
+            # container for evidence sentences
+            evidence = []
+
+            print(miRNA.name)
+            print(cancer)
+
+            # find the sentences containing mi-RNA and Cancer
+            for s in sent:
+                re_result = re.search(miRNA.name, s)  # find mi-RNA
+                if re_result != None:
+                    re_result = re.search(cancer, s)  # find cancer
+                    if re_result != None:
+                        evidence.append(s)
+
+            # save the evidence sentences to database
+            for s in evidence:
+                se = Sentence(sent=s, article=art)
+                se.save()
+                se.mirna.add(miRNA)
+                se.cancer.add(cancer_object)
+
+            all_evidence.append(evidence)
+
+
+    return HttpResponse([all_evidence])
+
+
+@csrf_exempt
+def get_evidence(request):
+    # user search
+    if request.method == 'POST':
+        # get search word
+        # we do NOT stem in this hw
+        search_cancer = request.POST['cancer']
+        search_mirna = request.POST['mirna']
+
+        # search for (eg. miR-34 and microRNA-34 )
+        mirna_family = []
+        for i in MirnaFamily.objects.filter(root__name=search_mirna):
+            mirna_family.append(i)
+
+        cancer_object = Cancer.objects.filter(name=search_cancer)[0]
+
+        return_dict = {
+            'mirna': [i.name for i in mirna_family],
+            'cancer': cancer_object.name
+        }
+
+        return JsonResponse(return_dict, safe=False)
+
+    else:
+        return HttpResponse('wrong method, use POST')

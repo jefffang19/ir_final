@@ -1,5 +1,3 @@
-from .hw1_controller.views_hw1 import *
-
-from .controller.data_proccess_api import import_csv, journal_list
+from .controller.data_proccess_api import *
 
 # Create your views here.

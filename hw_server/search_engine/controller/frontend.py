@@ -110,7 +110,7 @@ def get_evidence(request):
         come_from_journel_if = [i[2] for i in sorted_evid_jour_if_pair]
 
         # calculate score
-        # key senteces * num of articles * ( avg impact factor )
+        # key senteces * num of articles * ( avg(impact factor + 1 ) )
         # we +1 for all impact factor because there is some journals whose impact factor is zero
         arts = Article.objects.filter(cancer=search_cancer, mirna=search_mirna)
         impact_factors = [i.impact_factor + 1 for i in arts]
@@ -121,7 +121,7 @@ def get_evidence(request):
         if len(impact_factors) != 0:
             avg_if = np.mean(np.array(impact_factors))
 
-        print(len(arts))
+        # print(len(arts))
         evidence_score = len(all_mark_setences) * len(arts) * avg_if
 
         return_dict = {

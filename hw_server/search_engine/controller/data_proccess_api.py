@@ -252,22 +252,49 @@ def get_evidence(request):
         for s in Sentence.objects.filter(mirna = mirna_family[0], cancer = cancer_object):
             evidence_setences.append(s.sent)
 
-        marked_sentences = []
+        # TODO: search for all the articles
+
+        # find mirna and cancer location in a sentence
+        mirna_loc = []
+        cancer_loc = []
+        a = re.search(mirna_family[0].name, evidence_setences[0])  # find mi-RNA
+        if a != None:
+            mirna_loc = [a.start(), a.end()]
+            a = re.search(cancer_object.name.lower(), evidence_setences[0])  # find cancer
+            if a != None:
+                cancer_loc = [a.start(), a.end()]
 
         # now we high light the sentences
+        marked_sentences = []
         for exp in sorted_expression():
             for kywd in exp:
                 marked_sentence = ""
 
                 a = re.search(kywd, evidence_setences[0])
                 if a != None:
-                    end_mark = False
+                    # decide when to use <mark> and </mark>
+                    end_mark_exp = False
+                    end_mark_can = False
+                    end_mark_mi = False
+
                     # print sentence with marker
                     for j, w in enumerate(evidence_setences[0]):
                         if (j == a.start() or j == a.end()):
-                            if not end_mark:
+                            if not end_mark_exp:
                                 marked_sentence += '<mark>'
-                                end_mark = True
+                                end_mark_exp = True
+                            else:
+                                marked_sentence += '</mark>'
+                        elif (j == cancer_loc[0] or j == cancer_loc[1]):
+                            if not end_mark_can:
+                                marked_sentence += '<mark>'
+                                end_mark_can = True
+                            else:
+                                marked_sentence += '</mark>'
+                        elif (j == mirna_loc[0] or j == mirna_loc[1]):
+                            if not end_mark_mi:
+                                marked_sentence += '<mark>'
+                                end_mark_mi = True
                             else:
                                 marked_sentence += '</mark>'
 

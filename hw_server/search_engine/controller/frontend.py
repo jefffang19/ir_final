@@ -73,7 +73,7 @@ def get_evidence(request):
                 for exp_loc in expressions_loc:
                     if (j == exp_loc[0] or j == exp_loc[1]):
                         if not end_mark_exp:
-                            marked_sentence += '<a href="#" class="text-primary">'
+                            marked_sentence += '<a href="#" class="text-white bg-primary">'
                             end_mark_exp = True
                         else:
                             marked_sentence += '</a>'
@@ -81,13 +81,13 @@ def get_evidence(request):
 
                 if (j == cancer_loc[0] or j == cancer_loc[1]):
                     if not end_mark_can:
-                        marked_sentence += '<a href="#" class="text-success">'
+                        marked_sentence += '<a href="#" class="text-white bg-success">'
                         end_mark_can = True
                     else:
                         marked_sentence += '</a>'
                 elif (j == mirna_loc[0] or j == mirna_loc[1]):
                     if not end_mark_mi:
-                        marked_sentence += '<a href="#" class="text-danger">'
+                        marked_sentence += '<a href="#" class="text-white bg-danger">'
                         end_mark_mi = True
                     else:
                         marked_sentence += '</a>'

@@ -58,7 +58,8 @@ def get_evidence(request):
                 for kywd in exp:
                     a = re.search(kywd, evid_sent.lower())
                     if a != None:
-                        expressions_loc.append([a.start(), a.end()])
+                        if a.start() not in [i[0] for i in expressions_loc]:
+                            expressions_loc.append([a.start(), a.end()])
 
             # if no expressions_loc
             if len(expressions_loc) == 0:
